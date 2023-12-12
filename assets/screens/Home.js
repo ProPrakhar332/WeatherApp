@@ -9,6 +9,7 @@ import {
   FlatList,
   Modal,
   Alert,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFonts, Poppins_500Medium } from "@expo-google-fonts/poppins";
@@ -21,6 +22,7 @@ import logo from "../images/logo.png";
 import weatherapiLogo from "../images/weatherapiLogo.png";
 
 //icons
+import Feather from "react-native-vector-icons/Feather";
 import Entypo from "react-native-vector-icons/Entypo";
 import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
@@ -553,7 +555,7 @@ export function Home({ navigation }) {
                 {
                   borderTopRightRadius: 20,
                   borderTopLeftRadius: 20,
-                  height: "90%",
+                  height: 550,
                 },
               ]}
             >
@@ -614,7 +616,7 @@ export function Home({ navigation }) {
                   {CurrentCard.location.country}
                 </Text>
               </View>
-              {/* Temperature */}
+              {/* Middle Part */}
               <View
                 style={{
                   flexDirection: "row",
@@ -624,7 +626,8 @@ export function Home({ navigation }) {
                   justifyContent: "space-between",
                 }}
               >
-                <View>
+                <View style={{}}>
+                  {/* Temperature */}
                   <Text style={[styles.text, { fontSize: 60 }]}>
                     {CurrentCard.current.temp_c}
                     {"°"}
@@ -632,8 +635,16 @@ export function Home({ navigation }) {
                   <Text style={[styles.text, { fontSize: 20, top: -10 }]}>
                     {CurrentCard.current.condition.text}
                   </Text>
-                  <View style={{ flexDirection: "row", top: -10 }}>
-                    <View style={{ flexDirection: "row", marginRight: 20 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      top: -5,
+                      width: "100%",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    {/* Humidity */}
+                    <View style={{ flexDirection: "row" }}>
                       <FontAwesome5
                         name="water"
                         size={20}
@@ -642,9 +653,10 @@ export function Home({ navigation }) {
                       />
                       <Text style={[styles.text, { fontSize: 16 }]}>
                         {CurrentCard.current.humidity}
-                        {" %"}
+                        {"%"}
                       </Text>
                     </View>
+                    {/* Wind Speed */}
                     <View style={{ flexDirection: "row" }}>
                       <FontAwesome5
                         name="wind"
@@ -654,39 +666,156 @@ export function Home({ navigation }) {
                       />
                       <Text style={[styles.text, { fontSize: 16 }]}>
                         {CurrentCard.current.wind_kph}
-                        {" kmph"}
+                        <Text style={{ fontSize: 14 }}>{" kmph"}</Text>
+                      </Text>
+                    </View>
+                    {/* Air Pressure */}
+                    <View style={{ flexDirection: "row" }}>
+                      <Entypo
+                        name="gauge"
+                        size={20}
+                        color={"white"}
+                        style={{ marginRight: 5 }}
+                      />
+                      <Text style={[styles.text, { fontSize: 16 }]}>
+                        {CurrentCard.current.pressure_in}
+                        <Text style={{ fontSize: 14 }}>{" mbar"}</Text>
                       </Text>
                     </View>
                   </View>
                 </View>
-                {/* <Image
-                  source={{
-                    uri: "https:" + CurrentCard.current.condition.icon,
-                  }}
-                  style={{
-                    width: 125,
-                    height: 125,
-                    resizeMode: "cover",
-                    marginRight: 10,
-                  }}
-                /> */}
               </View>
-              {/* <View
+              {/* Astro Sunrise/Sunset */}
+              <View
                 style={{
-                  backgroundColor: "#00000030",
-                  width: 100,
-                  height: 100,
-                  alignItems: "center",
-                  justifyContent: "center",
+                  flexDirection: "row",
+                  top: -5,
+                  right: -2.5,
+                  width: "92.5%",
+                  alignSelf: "center",
+                  justifyContent: "space-between",
                 }}
               >
-                <Text style={[styles.text, { color: "white", opacity: 1 }]}>
-                  Feels Like
+                <View
+                  style={{
+                    flexDirection: "row",
+                  }}
+                >
+                  <Feather
+                    name={"sunrise"}
+                    color={"white"}
+                    size={27}
+                    style={{ marginRight: 7.5, alignSelf: "baseline" }}
+                  />
+                  <Text style={[styles.text, { fontSize: 20 }]}>
+                    {CurrentCard.forecast.forecastday[0].astro.sunrise}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: "row" }}>
+                  <Feather
+                    name={"sunset"}
+                    color={"white"}
+                    size={27}
+                    style={{ marginRight: 7.5, alignSelf: "baseline" }}
+                  />
+                  <Text style={[styles.text, { fontSize: 20 }]}>
+                    {CurrentCard.forecast.forecastday[0].astro.sunset}
+                  </Text>
+                </View>
+              </View>
+              {/*Hourly Forecast */}
+              <View style={{ height: 150, marginTop: 20 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "baseline",
+                    right: -10,
+                  }}
+                >
+                  <FontAwesome5
+                    name="clock"
+                    color={"white"}
+                    size={20}
+                    style={{ marginRight: 10 }}
+                    solid={true}
+                  />
+                  <Text style={[styles.text, { fontSize: 20 }]}>
+                    Hourly Forecast
+                  </Text>
+                </View>
+                <ScrollView
+                  style={{ flexDirection: "row" }}
+                  horizontal={true}
+                  showsHorizontalScrollIndicator={false}
+                  bounces={false}
+                >
+                  {CurrentCard.forecast.forecastday[0].hour.map((item) => {
+                    let timeA = dayjs.unix(item.time_epoch);
+                    let time = dayjs(timeA).format("h A");
+                    //console.log(time);
+                    return (
+                      <View
+                        style={{
+                          alignItems: "center",
+                          alignContent: "center",
+                          justifyContent: "center",
+                          width: 70,
+                          height: 110,
+                          borderRadius: 20,
+                          backgroundColor: "#7BBEE58A",
+                          margin: 5,
+                        }}
+                      >
+                        <Text style={[styles.text, { fontSize: 14 }]}>
+                          {time}
+                        </Text>
+                        <Image
+                          source={{
+                            uri: "https:" + item.condition.icon,
+                          }}
+                          style={{
+                            width: 50,
+                            height: 50,
+                            resizeMode: "cover",
+                          }}
+                        ></Image>
+                        <Text style={[styles.text]}>
+                          {item.temp_c}
+                          {" °C"}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+              {/* Favourite Button */}
+              <TouchableOpacity
+                style={{
+                  marginTop: 20,
+                  flexDirection: "row",
+                  alignItems: "baseline",
+                }}
+              >
+                <FontAwesome
+                  // name="heart-o"
+                  //color={"white"}
+                  name="heart"
+                  color={"red"}
+                  size={16}
+                  style={{ marginRight: 5 }}
+                />
+                <Text
+                  style={[
+                    styles.text,
+                    {
+                      fontSize: 16,
+                    },
+                  ]}
+                >
+                  {/* Add to Favourite */}
+                  Saved to Favourite
                 </Text>
-                <Text style={[styles.text, { color: "white" }]}>
-                  {CurrentCard.current.feelslike_c}
-                </Text>
-              </View> */}
+              </TouchableOpacity>
             </View>
           </View>
         </Modal>
@@ -724,6 +853,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: "100%",
     backgroundColor: "#88D2FD",
+    //backgroundColor: "#606062",
     padding: 35,
     shadowColor: "#000",
     shadowOffset: {
