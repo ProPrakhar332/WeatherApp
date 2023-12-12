@@ -8,18 +8,22 @@ import {
   TextInput,
   FlatList,
   Modal,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFonts, Poppins_500Medium } from "@expo-google-fonts/poppins";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import dayjs from "dayjs";
 import SwipeableFlatList from "react-native-swipeable-list";
+import apiKeys from "../constants/apiKey";
 //images
 import logo from "../images/logo.png";
 import weatherapiLogo from "../images/weatherapiLogo.png";
 
 //icons
+import Entypo from "react-native-vector-icons/Entypo";
 import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import img1 from "../icons/img1.png";
 import img2 from "../icons/img2.png";
@@ -28,12 +32,14 @@ import img4 from "../icons/img4.png";
 
 //gif
 import waiting from "../animated/waiting2.gif";
+import axios from "axios";
 
 export function Home({ navigation }) {
   const [data, setdata] = useState([]);
   const [city, setCity] = useState("");
-  const [showModal, setshowModal] = useState(true);
+  const [showModal, setshowModal] = useState(false);
   const [isLoading, setisLoading] = useState(false);
+  const [CurrentCard, setCurrentCard] = useState([]);
   let [fontsLoaded, fontError] = useFonts({
     Poppins_500Medium,
   });
@@ -150,6 +156,26 @@ export function Home({ navigation }) {
     },
   ];
 
+  const fetchData = async (city) => {
+    await axios
+      .get(
+        `https://api.weatherapi.com/v1/forecast.json?key=${apiKeys.WeatherApiKey}&q=${city}&days=1&aqi=no&alerts=no`
+      )
+      .then((res) => {
+        console.log(res.data);
+        if (res.status == 200) {
+          setCurrentCard(res.data);
+          //console.log(res.data.location.name);
+          setisLoading(false);
+          setshowModal(true);
+        }
+      })
+      .catch((err) => {
+        setisLoading(false);
+        console.log(err);
+      });
+  };
+
   const renderDefaultData = ({ item }) => {
     return (
       <View
@@ -192,6 +218,9 @@ export function Home({ navigation }) {
           //justifyContent: "space-between",
         }}
         activeOpacity={1}
+        onPress={() => {
+          setshowModal(true);
+        }}
       >
         <Image
           source={{
@@ -223,24 +252,20 @@ export function Home({ navigation }) {
             <View
               style={{
                 flexDirection: "row",
-                justifyContent: "space-between",
+
                 alignItems: "center",
               }}
             >
-              <View style={{ flexDirection: "row" }}>
+              <View style={{ flexDirection: "row", marginRight: 20 }}>
                 <FontAwesome5
-                  name={
-                    item.current.temp_c >= 19
-                      ? "temperature-high"
-                      : "temperature-low"
-                  }
+                  name={"temperature-low"}
                   size={20}
                   color={"white"}
                   style={{ marginRight: 5 }}
                 />
                 <Text style={[styles.text, { fontSize: 16 }]}>
                   {item.current.temp_c}
-                  {" °C"}
+                  {" °"}
                 </Text>
               </View>
               <View style={{ flexDirection: "row" }}>
@@ -275,7 +300,20 @@ export function Home({ navigation }) {
         <View style={{}}>
           <TouchableOpacity
             onPress={() => {
-              removeItem(qaItem.location.name);
+              Alert.alert(
+                "Remove City",
+                `Are you sure you want to remove ${qaItem.location.name} from favourite list?`,
+                [
+                  {
+                    text: "OK",
+                    onPress: () => removeItem(qaItem.location.name),
+                  },
+                  {
+                    text: "Cancel",
+                    style: "cancel",
+                  },
+                ]
+              );
             }}
             style={{
               flex: 1,
@@ -357,8 +395,9 @@ export function Home({ navigation }) {
               marginLeft: 10,
             }}
             onSubmitEditing={() => {
-              //setisLoading(true);
-              setshowModal(true);
+              setisLoading(true);
+              fetchData(city);
+              //setshowModal(true);
             }}
           />
           {city.length > 0 ? (
@@ -390,23 +429,52 @@ export function Home({ navigation }) {
         {/* Body */}
 
         {data.length == 0 ? (
-          <FlatList
-            data={defaultData}
-            renderItem={renderDefaultData}
-            style={{ marginTop: 20 }}
-          />
+          <View style={{ marginTop: 20 }}>
+            <Text
+              style={[
+                styles.headingText,
+                {
+                  width: "90%",
+                  alignSelf: "center",
+                  fontSize: 20,
+                  textAlign: "left",
+                },
+              ]}
+            >
+              Features
+            </Text>
+            <FlatList data={defaultData} renderItem={renderDefaultData} />
+          </View>
         ) : (
-          <SwipeableFlatList
-            data={data}
-            keyExtractor={(item) => item.location.name}
-            renderItem={renderWeatherCard}
-            maxSwipeDistance={69}
-            renderQuickActions={({ index, item }) => QuickActions(index, item)}
-            //contentContainerStyle={styles.contentContainerStyle}
-            shouldBounceOnMount={false}
-            bounce={false}
-            //ItemSeparatorComponent={renderItemSeparator}
-          />
+          <View style={{ marginTop: 20 }}>
+            <Text
+              style={[
+                styles.headingText,
+                {
+                  width: "90%",
+                  alignSelf: "center",
+                  fontSize: 20,
+                  textAlign: "left",
+                },
+              ]}
+            >
+              Favourite Cities
+            </Text>
+            <SwipeableFlatList
+              data={data}
+              keyExtractor={(item) => item.location.name}
+              renderItem={renderWeatherCard}
+              maxSwipeDistance={69}
+              renderQuickActions={({ index, item }) =>
+                QuickActions(index, item)
+              }
+              //contentContainerStyle={styles.contentContainerStyle}
+              shouldBounceOnMount={false}
+              bounce={false}
+
+              //ItemSeparatorComponent={renderItemSeparator}
+            />
+          </View>
         )}
       </View>
       {isLoading && (
@@ -485,19 +553,40 @@ export function Home({ navigation }) {
                 {
                   borderTopRightRadius: 20,
                   borderTopLeftRadius: 20,
+                  height: "90%",
                 },
               ]}
             >
+              {/* Modal Heading */}
               <View
                 style={{
                   width: "100%",
                   alignSelf: "center",
+                  flexDirection: "row",
                 }}
               >
-                <Text>{city}</Text>
+                <Entypo
+                  name="location-pin"
+                  color={"white"}
+                  size={30}
+                  style={{ alignSelf: "center", left: -15 }}
+                />
+                <Text
+                  style={[
+                    styles.text,
+                    {
+                      alignSelf: "center",
+                      color: "white",
+                      fontSize: 30,
+                      left: -15,
+                    },
+                  ]}
+                >
+                  {CurrentCard.location.name}
+                </Text>
                 <FontAwesome
                   name="close"
-                  color="black"
+                  color="white"
                   size={26}
                   style={{
                     position: "absolute",
@@ -510,6 +599,94 @@ export function Home({ navigation }) {
                   }}
                 />
               </View>
+              {/* Modal Sub-Heading */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignSelf: "center",
+                  width: "90%",
+                  top: -10,
+                }}
+              >
+                <Text style={[styles.text, { color: "white", fontSize: 20 }]}>
+                  {CurrentCard.location.region}
+                  {", "}
+                  {CurrentCard.location.country}
+                </Text>
+              </View>
+              {/* Temperature */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignSelf: "center",
+                  width: "90%",
+                  top: -10,
+                  justifyContent: "space-between",
+                }}
+              >
+                <View>
+                  <Text style={[styles.text, { fontSize: 60 }]}>
+                    {CurrentCard.current.temp_c}
+                    {"°"}
+                  </Text>
+                  <Text style={[styles.text, { fontSize: 20, top: -10 }]}>
+                    {CurrentCard.current.condition.text}
+                  </Text>
+                  <View style={{ flexDirection: "row", top: -10 }}>
+                    <View style={{ flexDirection: "row", marginRight: 20 }}>
+                      <FontAwesome5
+                        name="water"
+                        size={20}
+                        color={"white"}
+                        style={{ marginRight: 5 }}
+                      />
+                      <Text style={[styles.text, { fontSize: 16 }]}>
+                        {CurrentCard.current.humidity}
+                        {" %"}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: "row" }}>
+                      <FontAwesome5
+                        name="wind"
+                        size={20}
+                        color={"white"}
+                        style={{ marginRight: 5 }}
+                      />
+                      <Text style={[styles.text, { fontSize: 16 }]}>
+                        {CurrentCard.current.wind_kph}
+                        {" kmph"}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+                {/* <Image
+                  source={{
+                    uri: "https:" + CurrentCard.current.condition.icon,
+                  }}
+                  style={{
+                    width: 125,
+                    height: 125,
+                    resizeMode: "cover",
+                    marginRight: 10,
+                  }}
+                /> */}
+              </View>
+              {/* <View
+                style={{
+                  backgroundColor: "#00000030",
+                  width: 100,
+                  height: 100,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={[styles.text, { color: "white", opacity: 1 }]}>
+                  Feels Like
+                </Text>
+                <Text style={[styles.text, { color: "white" }]}>
+                  {CurrentCard.current.feelslike_c}
+                </Text>
+              </View> */}
             </View>
           </View>
         </Modal>
@@ -546,7 +723,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     bottom: 0,
     width: "100%",
-    backgroundColor: "white",
+    backgroundColor: "#88D2FD",
     padding: 35,
     shadowColor: "#000",
     shadowOffset: {
