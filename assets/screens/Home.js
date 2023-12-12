@@ -30,7 +30,7 @@ import img4 from "../icons/img4.png";
 import waiting from "../animated/waiting2.gif";
 
 export function Home({ navigation }) {
-  const [data, setdata] = useState(null);
+  const [data, setdata] = useState([]);
   const [city, setCity] = useState("");
   const [showModal, setshowModal] = useState(true);
   const [isLoading, setisLoading] = useState(false);
@@ -274,7 +274,9 @@ export function Home({ navigation }) {
       >
         <View style={{}}>
           <TouchableOpacity
-            onPress={() => {}}
+            onPress={() => {
+              removeItem(qaItem.location.name);
+            }}
             style={{
               flex: 1,
               backgroundColor: "red",
@@ -296,6 +298,13 @@ export function Home({ navigation }) {
       </View>
     );
   };
+  const removeItem = (id) => {
+    // console.log(id);
+
+    const newState = [...data];
+    const filteredState = newState.filter((item) => item.location.name !== id);
+    return setdata(filteredState);
+  };
 
   //   if (!fontsLoaded && !fontError) {
   //     return null;
@@ -306,6 +315,7 @@ export function Home({ navigation }) {
       console.log(x);
     };
     //getData();
+    setdata(asyncData);
   }, []);
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -379,7 +389,7 @@ export function Home({ navigation }) {
         </View>
         {/* Body */}
 
-        {!data ? (
+        {data.length == 0 ? (
           <FlatList
             data={defaultData}
             renderItem={renderDefaultData}
@@ -387,7 +397,7 @@ export function Home({ navigation }) {
           />
         ) : (
           <SwipeableFlatList
-            data={asyncData}
+            data={data}
             keyExtractor={(item) => item.location.name}
             renderItem={renderWeatherCard}
             maxSwipeDistance={69}
