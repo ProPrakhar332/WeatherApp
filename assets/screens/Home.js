@@ -33,11 +33,12 @@ import img3 from "../icons/img3.png";
 import img4 from "../icons/img4.png";
 
 //gif
-import waiting from "../animated/waiting2.gif";
+import loading from "../animated/loading.gif";
 import axios from "axios";
 
 export function Home({ navigation }) {
   const [data, setdata] = useState([]);
+  const [favouriteCities, setFavouriteCities] = useState([]);
   const [city, setCity] = useState("");
   const [showModal, setshowModal] = useState(false);
   const [isLoading, setisLoading] = useState(false);
@@ -183,21 +184,23 @@ export function Home({ navigation }) {
       <View
         key={item.id}
         style={{
-          width: "95%",
+          width: "90%",
           flexDirection: "row",
           alignItems: "center",
           alignSelf: "center",
           backgroundColor: "#606062",
           padding: 15,
-          borderRadius: 50,
-          marginTop: 20,
+          borderRadius: 25,
+          marginTop: 15,
         }}
       >
         <Image
           source={item.image}
           style={{ width: 80, height: 80, left: -10 }}
         />
-        <Text style={[styles.text, { width: "70%", marginRight: 10 }]}>
+        <Text
+          style={[styles.text, { fontSize: 14, width: "70%", marginRight: 10 }]}
+        >
           {item.heading}
         </Text>
       </View>
@@ -208,7 +211,8 @@ export function Home({ navigation }) {
       <TouchableOpacity
         key={item.location.name}
         style={{
-          flex: 1,
+          // flex: 1,
+          height: 100,
           width: "100%",
           //borderRadius: 20,
           //   alignSelf: "center",
@@ -217,10 +221,12 @@ export function Home({ navigation }) {
           backgroundColor: "#606062",
           marginTop: 10,
           padding: 10,
-          //justifyContent: "space-between",
+          //justifyContent: "space-ev",
         }}
         activeOpacity={1}
-        onPress={() => {
+        onLongPress={() => {
+          console.log(item.location.name);
+          setCurrentCard(item);
           setshowModal(true);
         }}
       >
@@ -235,53 +241,50 @@ export function Home({ navigation }) {
             marginRight: 10,
           }}
         />
-        <View style={{ flexDirection: "column" }}>
+        <View
+          style={{ flexDirection: "column", justifyContent: "space-evenly" }}
+        >
           <View>
             <Text style={[styles.text, { fontSize: 22 }]}>
               {item.location.name}
             </Text>
           </View>
+
+          <View>
+            <Text style={[styles.text, { fontSize: 16 }]}>
+              {item.current.condition.text}
+            </Text>
+          </View>
           <View
             style={{
-              justifyContent: "space-evenly",
+              flexDirection: "row",
+
+              alignItems: "center",
             }}
           >
-            <View>
-              <Text style={[styles.text, { fontSize: 16, top: -3 }]}>
-                {item.current.condition.text}
+            <View style={{ flexDirection: "row", marginRight: 20 }}>
+              <FontAwesome5
+                name={"temperature-low"}
+                size={20}
+                color={"white"}
+                style={{ marginRight: 5 }}
+              />
+              <Text style={[styles.text, { fontSize: 16 }]}>
+                {item.current.temp_c}
+                {" °"}
               </Text>
             </View>
-            <View
-              style={{
-                flexDirection: "row",
-
-                alignItems: "center",
-              }}
-            >
-              <View style={{ flexDirection: "row", marginRight: 20 }}>
-                <FontAwesome5
-                  name={"temperature-low"}
-                  size={20}
-                  color={"white"}
-                  style={{ marginRight: 5 }}
-                />
-                <Text style={[styles.text, { fontSize: 16 }]}>
-                  {item.current.temp_c}
-                  {" °"}
-                </Text>
-              </View>
-              <View style={{ flexDirection: "row" }}>
-                <FontAwesome5
-                  name="wind"
-                  size={20}
-                  color={"white"}
-                  style={{ marginRight: 5 }}
-                />
-                <Text style={[styles.text, { fontSize: 16 }]}>
-                  {item.current.wind_kph}
-                  {" kmph"}
-                </Text>
-              </View>
+            <View style={{ flexDirection: "row" }}>
+              <FontAwesome5
+                name="wind"
+                size={20}
+                color={"white"}
+                style={{ marginRight: 5 }}
+              />
+              <Text style={[styles.text, { fontSize: 16 }]}>
+                {item.current.wind_kph}
+                <Text style={{ fontSize: 14 }}></Text> {" kmph"}
+              </Text>
             </View>
           </View>
         </View>
@@ -308,7 +311,7 @@ export function Home({ navigation }) {
                 [
                   {
                     text: "OK",
-                    onPress: () => removeItem(qaItem.location.name),
+                    onPress: async () => await removeItem(qaItem.location.name),
                   },
                   {
                     text: "Cancel",
@@ -338,12 +341,39 @@ export function Home({ navigation }) {
       </View>
     );
   };
-  const removeItem = (id) => {
+  const removeItem = async (id) => {
     // console.log(id);
 
     const newState = [...data];
+    let x = [...favouriteCities];
+    x = x.filter((item) => item !== id);
+    await AsyncStorage.setItem("FavouriteCities", JSON.stringify(x));
+    setFavouriteCities(x);
     const filteredState = newState.filter((item) => item.location.name !== id);
+    Alert.alert("Removed", `${id} removed from favourite cities list`, [
+      {
+        text: "OK",
+      },
+    ]);
     return setdata(filteredState);
+  };
+  const addToFavourite = async (DisplayData) => {
+    console.log(DisplayData);
+    favouriteCities.push(DisplayData.location.name);
+    await AsyncStorage.setItem(
+      "FavouriteCities",
+      JSON.stringify(favouriteCities)
+    );
+    setdata([...data, DisplayData]);
+    Alert.alert(
+      "Successful",
+      `${DisplayData.location.name} added to favourite cities list`,
+      [
+        {
+          text: "OK",
+        },
+      ]
+    );
   };
 
   //   if (!fontsLoaded && !fontError) {
@@ -351,12 +381,43 @@ export function Home({ navigation }) {
   //   }
   useEffect(() => {
     const getData = async () => {
-      let x = await AsyncStorage.getItem("Pop");
+      let x = JSON.parse(await AsyncStorage.getItem("FavouriteCities"));
       console.log(x);
+      if (x != null && x.length > 0) {
+        setisLoading(true);
+        setFavouriteCities(x);
+        x.forEach((ele) => {
+          fetchFavoutiteData(ele);
+        });
+        setisLoading(false);
+      }
+      //setdata(x);
     };
-    //getData();
-    setdata(asyncData);
+    getData();
+    // const loader = async () => {
+    //   let x = ["Dehradun", "New Delhi", "Almora"];
+    //   await AsyncStorage.setItem("FavouriteCities", JSON.stringify(x));
+    //   console.log(await AsyncStorage.getItem("FavouriteCities"));
+    // };
+    // loader();
+    //setdata(asyncData);
   }, []);
+
+  const fetchFavoutiteData = async (city) => {
+    await axios
+      .get(
+        `https://api.weatherapi.com/v1/forecast.json?key=${apiKeys.WeatherApiKey}&q=${city}&days=1&aqi=no&alerts=no`
+      )
+      .then((res) => {
+        //console.log(res.data);
+        if (res.status == 200) {
+          //data.push(res.data);
+          if (data.length == 0) data.push(res.data);
+          else setdata([...data, res.data]);
+        }
+      });
+  };
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
       {/* <Text> Home </Text>
@@ -385,7 +446,6 @@ export function Home({ navigation }) {
         >
           <TextInput
             onChangeText={(text) => setCity(text)}
-            value={city}
             placeholder="Search for a city or airport"
             placeholderTextColor={"gray"}
             style={{
@@ -401,6 +461,7 @@ export function Home({ navigation }) {
               fetchData(city);
               //setshowModal(true);
             }}
+            value={city}
           />
           {city.length > 0 ? (
             <TouchableOpacity onPress={() => setCity("")}>
@@ -445,10 +506,15 @@ export function Home({ navigation }) {
             >
               Features
             </Text>
-            <FlatList data={defaultData} renderItem={renderDefaultData} />
+            <FlatList
+              data={defaultData}
+              renderItem={renderDefaultData}
+              bounces={false}
+              scrollEnabled={true}
+            />
           </View>
         ) : (
-          <View style={{ marginTop: 20 }}>
+          <View style={{ marginTop: 20, marginBottom: 200 }}>
             <Text
               style={[
                 styles.headingText,
@@ -505,7 +571,7 @@ export function Home({ navigation }) {
             }}
           >
             <Image
-              source={waiting}
+              source={loading}
               style={{
                 alignSelf: "center",
                 width: 100,
@@ -522,12 +588,13 @@ export function Home({ navigation }) {
                   textAlign: "center",
                   color: "black",
                   width: "100%",
+                  fontSize: 20,
                   // padding: 10,
                   // padding: 10,
                 },
               ]}
             >
-              Fetching Data
+              Loading...
             </Text>
           </View>
         </View>
@@ -555,7 +622,9 @@ export function Home({ navigation }) {
                 {
                   borderTopRightRadius: 20,
                   borderTopLeftRadius: 20,
-                  height: 550,
+                  //minHeight: 550,
+                  height: "90%",
+                  justifyContent: "space-evenly",
                 },
               ]}
             >
@@ -586,21 +655,23 @@ export function Home({ navigation }) {
                 >
                   {CurrentCard.location.name}
                 </Text>
-                <FontAwesome
-                  name="close"
-                  color="white"
-                  size={26}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    right: 0,
-                  }}
-                  onPress={() => {
-                    setshowModal(false);
-                    setCity("");
-                  }}
-                />
               </View>
+              {/* Close Button */}
+              <FontAwesome
+                name="close"
+                color="white"
+                size={26}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                  margin: 20,
+                }}
+                onPress={() => {
+                  setshowModal(false);
+                  setCity("");
+                }}
+              />
               {/* Modal Sub-Heading */}
               <View
                 style={{
@@ -628,10 +699,20 @@ export function Home({ navigation }) {
               >
                 <View style={{}}>
                   {/* Temperature */}
-                  <Text style={[styles.text, { fontSize: 60 }]}>
-                    {CurrentCard.current.temp_c}
-                    {"°"}
-                  </Text>
+                  <View
+                    style={{ flexDirection: "row", alignItems: "baseline" }}
+                  >
+                    {/* <FontAwesome5
+                      name={"temperature-low"}
+                      size={40}
+                      color={"white"}
+                      style={{ marginRight: 5 }}
+                    /> */}
+                    <Text style={[styles.text, { fontSize: 60 }]}>
+                      {CurrentCard.current.temp_c}
+                      {"°"}
+                    </Text>
+                  </View>
                   <Text style={[styles.text, { fontSize: 20, top: -10 }]}>
                     {CurrentCard.current.condition.text}
                   </Text>
@@ -744,7 +825,7 @@ export function Home({ navigation }) {
                   </Text>
                 </View>
                 <ScrollView
-                  style={{ flexDirection: "row" }}
+                  style={{ flexDirection: "row", marginTop: 10 }}
                   horizontal={true}
                   showsHorizontalScrollIndicator={false}
                   bounces={false}
@@ -755,6 +836,7 @@ export function Home({ navigation }) {
                     //console.log(time);
                     return (
                       <View
+                        key={time}
                         style={{
                           alignItems: "center",
                           alignContent: "center",
@@ -789,33 +871,81 @@ export function Home({ navigation }) {
                 </ScrollView>
               </View>
               {/* Favourite Button */}
-              <TouchableOpacity
-                style={{
-                  marginTop: 20,
-                  flexDirection: "row",
-                  alignItems: "baseline",
-                }}
-              >
-                <FontAwesome
-                  // name="heart-o"
-                  //color={"white"}
-                  name="heart"
-                  color={"red"}
-                  size={16}
-                  style={{ marginRight: 5 }}
-                />
-                <Text
-                  style={[
-                    styles.text,
-                    {
-                      fontSize: 16,
-                    },
-                  ]}
+              {favouriteCities.indexOf(CurrentCard.location.name) != -1 ? (
+                <TouchableOpacity
+                  style={{
+                    marginTop: 20,
+                    flexDirection: "row",
+                    alignItems: "baseline",
+                  }}
+                  activeOpacity={0.7}
+                  onPress={async () => {
+                    Alert.alert(
+                      "Remove City",
+                      `Are you sure you want to remove ${CurrentCard.location.name} from favourite list?`,
+                      [
+                        {
+                          text: "OK",
+                          onPress: async () =>
+                            await removeItem(CurrentCard.location.name),
+                        },
+                        {
+                          text: "Cancel",
+                          style: "cancel",
+                        },
+                      ]
+                    );
+                  }}
                 >
-                  {/* Add to Favourite */}
-                  Saved to Favourite
-                </Text>
-              </TouchableOpacity>
+                  <FontAwesome
+                    name="heart"
+                    color={"red"}
+                    size={16}
+                    style={{ marginRight: 5 }}
+                  />
+                  <Text
+                    style={[
+                      styles.text,
+                      {
+                        fontSize: 16,
+                      },
+                    ]}
+                  >
+                    {/* Add to Favourite */}
+                    Saved to Favourite
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={{
+                    marginTop: 20,
+                    flexDirection: "row",
+                    alignItems: "baseline",
+                  }}
+                  activeOpacity={0.7}
+                  onPress={async () => {
+                    addToFavourite(CurrentCard);
+                  }}
+                >
+                  <FontAwesome
+                    name="heart-o"
+                    color={"white"}
+                    size={16}
+                    style={{ marginRight: 5 }}
+                  />
+
+                  <Text
+                    style={[
+                      styles.text,
+                      {
+                        fontSize: 16,
+                      },
+                    ]}
+                  >
+                    Add to Favourite
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </Modal>
